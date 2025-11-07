@@ -166,7 +166,7 @@ Screenshots:
 
 > ![DynamoDB Records](images/dynamodb_table.png)  
 > ![AWS Environment](images/aws_env.png)
-> ![AQI dashboard](/images/aqi_dashboard_1.png)
+> ![AQI dashboard](images/aqi_dashboard_1.png)
 
 ---
 
