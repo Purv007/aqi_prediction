@@ -164,9 +164,9 @@ Example dashboard:
 
 Screenshots:  
 
-> ![DynamoDB Records](images/dynamodb_table.png)  
-> ![AWS Environment](images/aws_env.png)
-> ![AQI dashboard](images/aqi_dashboard_1.png)
+![DynamoDB Records](images/dynamodb_table.png)
+![AWS Environment](images/aws_env.png)
+![AQI Dashboard](images/aqi_dashboard_1.png)
 
 ---
 
