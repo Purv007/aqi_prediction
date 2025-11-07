@@ -1,0 +1,9 @@
+Flask==3.0.3
+requests==2.32.3
+joblib
+pandas
+scikit-learn
+Flask
+gunicorn
+flask-cors
+boto3

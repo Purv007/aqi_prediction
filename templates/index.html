@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AQI Monitor</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body class="bg-slate-50 min-h-screen transition-colors duration-500">
+  <div class="max-w-5xl mx-auto p-6">
+
+    <!-- Header -->
+    <header class="flex items-center justify-between">
+      <div>
+        <h1 class="text-2xl md:text-3xl font-extrabold text-slate-900">Air Quality Monitor</h1>
+        <p class="text-slate-500">Live AQI from Arduino Sensor</p>
+      </div>
+      <div class="flex items-center gap-3">
+        <span id="statusBadge" class="px-3 py-1 text-sm bg-gray-200 rounded-full">Idle</span>
+        <button id="refreshBtn" class="px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800">Get AQI</button>
+        <button id="autoBtn" class="px-4 py-2 bg-gray-200 text-black rounded-lg hover:bg-gray-300">Auto: OFF</button>
+      </div>
+    </header>
+
+    <!-- AQI Display -->
+    <section class="grid md:grid-cols-3 gap-6 mt-6">
+      <div id="aqiCard" class="md:col-span-2 bg-white rounded-2xl shadow p-6 transition-colors duration-500">
+        <div class="text-gray-500 text-sm">Current AQI</div>
+        <div id="aqiValue" class="text-5xl font-extrabold">—</div>
+        <div class="text-sm text-gray-500 mt-1">
+          Last updated: <span id="lastUpdated">—</span>
+        </div>
+        <div id="sensorsBlock" class="mt-4 flex flex-wrap gap-2 text-sm"></div>
+      </div>
+
+      <!-- Status Scale -->
+      <div class="bg-white rounded-2xl shadow p-6">
+        <h3 class="font-semibold text-slate-800">Status Scale</h3>
+        <ul class="mt-3 space-y-2 text-sm">
+          <li><span class="w-2 h-2 inline-block rounded-full bg-emerald-500 mr-2"></span>Good (0–50)</li>
+          <li><span class="w-2 h-2 inline-block rounded-full bg-yellow-500 mr-2"></span>Moderate (51–100)</li>
+          <li><span class="w-2 h-2 inline-block rounded-full bg-orange-500 mr-2"></span>Sensitive (101–200)</li>
+          <li><span class="w-2 h-2 inline-block rounded-full bg-red-500 mr-2"></span>Unhealthy (201–300)</li>
+          <li><span class="w-2 h-2 inline-block rounded-full bg-purple-600 mr-2"></span>Very Unhealthy (301–400)</li>
+          <li><span class="w-2 h-2 inline-block rounded-full bg-rose-700 mr-2"></span>Hazardous (400+)</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- AQI Chart -->
+    <section class="bg-white rounded-2xl shadow p-6 mt-6">
+      <h3 class="font-semibold text-slate-800 mb-2">AQI Trend (Last 10 Readings)</h3>
+      <div class="w-full h-64 border rounded-xl p-2">
+        <canvas id="aqiChart"></canvas>
+      </div>
+    </section>
+
+    <!-- Toast -->
+    <div id="toast" class="hidden fixed bottom-4 right-4 bg-white border shadow p-3 rounded-lg text-sm"></div>
+
+  </div>
+
+  <script>
+    // ✅ API endpoint
+    const API_BASE_URL = "http://aqi-env.eba-2xewf2jm.us-east-1.elasticbeanstalk.com";
+    const THRESHOLD_AQI = 150;
+    const $ = id => document.getElementById(id);
+
+    // ===== Chart setup =====
+    const ctx = $("aqiChart").getContext("2d");
+    const labels = [], values = [];
+    const chart = new Chart(ctx, {
+      type: "line",
+      data: {
+        labels,
+        datasets: [{
+          label: "AQI",
+          data: values,
+          borderColor: "#2563eb",
+          pointBackgroundColor: "#2563eb",
+          borderWidth: 2,
+          tension: 0.3
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: false,
+        scales: {
+          x: {
+            title: { display: true, text: "Time" },
+            ticks: { autoSkip: true, maxTicksLimit: 10 }
+          },
+          y: {
+            title: { display: true, text: "AQI" },
+            beginAtZero: true
+          }
+        }
+      }
+    });
+
+    function updateChart(aqi) {
+      const t = new Date().toLocaleTimeString();
+      labels.push(t);
+      values.push(aqi);
+      if (labels.length > 10) {
+        labels.shift();
+        values.shift();
+      }
+      chart.update();
+    }
+
+    function showToast(msg, color = "bg-white") {
+      const t = $("toast");
+      t.textContent = msg;
+      t.className = `fixed bottom-4 right-4 shadow p-3 rounded-lg text-sm ${color} ${color.includes("bg-red") ? "text-white" : "text-black"}`;
+      t.classList.remove("hidden");
+      clearTimeout(window.toastTimer);
+      window.toastTimer = setTimeout(() => t.classList.add("hidden"), 4000);
+    }
+
+    function getAQIColor(aqi) {
+      if (aqi <= 50) return ["bg-emerald-100", "text-emerald-700"];
+      if (aqi <= 100) return ["bg-yellow-100", "text-yellow-700"];
+      if (aqi <= 200) return ["bg-orange-100", "text-orange-700"];
+      if (aqi <= 300) return ["bg-red-100", "text-red-700"];
+      if (aqi <= 400) return ["bg-purple-100", "text-purple-700"];
+      return ["bg-rose-100", "text-rose-700"];
+    }
+
+    async function fetchAQI() {
+      $("statusBadge").textContent = "Loading…";
+      $("statusBadge").className = "px-3 py-1 rounded-full bg-gray-800 text-white";
+
+      try {
+        const res = await fetch(`${API_BASE_URL}/latest`);
+        const data = await res.json();
+
+        if (!data.aqi) {
+          $("statusBadge").textContent = "Waiting for sensor…";
+          $("statusBadge").className = "px-3 py-1 rounded-full bg-gray-300 text-black";
+          return;
+        }
+
+        const aqi = data.aqi;
+        const [bg, text] = getAQIColor(aqi);
+        const card = $("aqiCard");
+        const valueEl = $("aqiValue");
+
+        card.className = `md:col-span-2 rounded-2xl shadow p-6 transition-colors duration-500 ${bg}`;
+        valueEl.className = `text-5xl font-extrabold ${text}`;
+
+        valueEl.textContent = aqi.toFixed(2);
+        $("lastUpdated").textContent = new Date().toLocaleTimeString();
+
+        $("sensorsBlock").innerHTML = `
+          CO₂: ${data.sensors.CO2.toFixed(0)} ppm |
+          Benzene: ${data.sensors.C6H6.toFixed(2)} ppm |
+          Alcohol: ${data.sensors.Alcohol.toFixed(2)} ppm |
+          NH₃: ${data.sensors.NH3.toFixed(2)} ppm |
+          Temp: ${data.sensors.Temperature.toFixed(1)} °C |
+          RH: ${data.sensors.Relative_Humidity.toFixed(0)}%
+        `;
+
+        updateChart(aqi);
+
+        $("statusBadge").textContent = "Updated";
+        $("statusBadge").className = "px-3 py-1 rounded-full bg-emerald-500 text-white";
+
+        if (aqi > THRESHOLD_AQI)
+          showToast(`⚠ High AQI Detected: ${aqi}`, "bg-red-500");
+
+      } catch (err) {
+        $("statusBadge").textContent = "Error";
+        $("statusBadge").className = "px-3 py-1 rounded-full bg-red-500 text-white";
+        showToast("Failed to fetch AQI", "bg-red-500");
+        console.error(err);
+      }
+    }
+
+    $("refreshBtn").onclick = fetchAQI;
+
+    let auto = false, timer = null;
+    $("autoBtn").onclick = () => {
+      auto = !auto;
+      $("autoBtn").textContent = `Auto: ${auto ? "ON" : "OFF"}`;
+      if (auto) {
+        fetchAQI();
+        timer = setInterval(fetchAQI, 7000);
+      } else {
+        clearInterval(timer);
+      }
+    };
+  </script>
+</body>
+</html>
