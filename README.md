@@ -164,9 +164,9 @@ Example dashboard:
 
 Screenshots:  
 
-![DynamoDB Records](images/dynamodb_table.png)
-![AWS Environment](images/aws_env.png)
-![AQI Dashboard](images/aqi_dashboard_1.png)
+![AQI Dashboard](./images/aqi_dashboard_1.png)
+![AWS Environment](./images/aws_env.png)
+![DynamoDB Records](./images/dynamodb_table.png)
 
 ---
 
@@ -214,6 +214,11 @@ pyserial
 **Purv Patel**  
 📧 [patelpurv908@gmail.com]  
 🔗 [LinkedIn](https://www.linkedin.com/in/purv-patel-b31a84280/) | [GitHub](https://github.com/Purv007)
+
+---
+
+## 📜 License
+This project is licensed under the **MIT License** – feel free to use and modify with credit.
 
 ---
 
