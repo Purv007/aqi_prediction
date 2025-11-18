@@ -1,11 +1,14 @@
 # 🌍 Air Quality Index (AQI) Monitoring & Prediction System  
 
-![Python](https://img.shields.io/badge/Python-3.11-blue.svg)
+
+![Python](https://img.shields.io/badge/Python-3.11-blue)
 ![Flask](https://img.shields.io/badge/Flask-WebApp-lightgrey)
-![AWS](https://img.shields.io/badge/AWS-ElasticBeanstalk-orange)
+![AWS](https://img.shields.io/badge/AWS-Elastic%20Beanstalk-orange)
 ![DynamoDB](https://img.shields.io/badge/Database-DynamoDB-4053D6)
 ![Model](https://img.shields.io/badge/Model-RandomForest-green)
 ![Arduino](https://img.shields.io/badge/Hardware-Arduino%20UNO-blue)
+
+
 
 A real-time Air Quality Index (AQI) monitoring web app powered by **Flask**, **Machine Learning**, and **AWS Cloud**.  
 It fetches live sensor data (MQ135 + DHT22) from **Arduino UNO**, predicts AQI using a **Random Forest model**, and displays results with live charts.
